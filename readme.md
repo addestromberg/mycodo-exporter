@@ -10,4 +10,4 @@ an ```.env``` is needed with the variable set to you API key. Remove the ```.exa
 
 Can in theory be run from any server but is only tested on local network.
 
-Read more about (prometheus)[https://prometheus.io/] and how to setup ie a (grafana agent)[https://grafana.com/docs/agent/latest/]
+Read more about [prometheus](https://prometheus.io/) and how to setup ie a [grafana agent](https://grafana.com/docs/agent/latest/)
