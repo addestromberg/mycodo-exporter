@@ -35,6 +35,7 @@ class app:
                 self.devices = {}
                 self.get_devices()
                 self.get_device_channels()
+                logger.info(f"Found {len(self.devices)} device(s) on network.")
             time.sleep(config.INTERVAL_SECONDS)
 
 
