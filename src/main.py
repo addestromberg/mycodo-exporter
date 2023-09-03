@@ -1,6 +1,8 @@
 from utility import get_logger
 from mycodo_api import MycodoApi
 import config
+from prometheus_client import start_http_server, Gauge
+import time
 
 logger = get_logger()
 mycodo = MycodoApi()
@@ -9,9 +11,55 @@ devices = {}
 
 def main():
     logger.info("Initializing Mycodo Prometheus Exporter")
-
     get_devices()
-    
+    get_device_channels()
+    logger.info(f"Found {len(devices)} device(s) on network.")
+    #get_measurements()
+    start_exporter()
+    pass
+
+def start_exporter():
+    logger.debug("Started the exporter...")
+    while True:
+        # TODO: Create the exports here... 
+        logger.debug("Updating...")
+        get_measurements()
+        
+        time.sleep(config.INTERVAL_SECONDS)
+        
+        
+
+def get_device_channels():
+    """ Get all channels for registered device """
+    for uid, item in devices.items():
+        if item["type"] == "input":
+            # TODID: Inputs here
+            response = mycodo.get_input_device(uid=uid)
+            response = response["device measurements"]
+            
+            for channel in response:
+                params = {"uid": channel["unique_id"],
+                          "name": channel["name"],
+                          "measurement": channel["measurement"],
+                          "unit": channel["unit"],
+                          "channel": channel["channel"]}
+                devices[uid]["channels"].append(params)
+            
+        elif item["type"] ==  "output":
+            # TODID: Outputs here
+            response = mycodo.get_output_device(uid=uid)
+            response = response["output device channels"]
+            
+            for channel in response:
+                params = {"uid": channel["unique_id"],
+                          "name": channel["name"],
+                          "channel": channel["channel"]}
+                devices[uid]["channels"].append(params)
+        # elif item["type"] == "pids":
+        #     # TODID: Pids here
+        #     # Skipping becouse the pid settings is accessed from get all pids
+        #     pass
+            
 def get_devices():
     """
     Get all devices connected to mycodo
@@ -51,27 +99,59 @@ def get_devices():
         except Exception as e:
             logger.error(f"Failed to get output devices. - {e}")
         
-    if "PIDS" in config.EXPORT_MEASUREMENTS:
-        logger.info("Get all pid regulators...")
-        try:
-            pid_devices = mycodo.get_pids()
-            if pid_devices == None:
-                raise Exception("API call for pid regulators returned None.")
+    # if "PIDS" in config.EXPORT_MEASUREMENTS:
+    #     try:
+    #         pid_devices = mycodo.get_pids()
+    #         if pid_devices == None:
+    #             raise Exception("API call for pid regulators returned None.")
             
-            pid_devices = pid_devices["pid settings"]
-            for device in pid_devices:
-                devices[device["unique_id"]] = {"type": "pid",
-                                                "name": device["name"],
-                                                "channels": []}
+    #         pid_devices = pid_devices["pid settings"]
+    #         for device in pid_devices:
+    #             devices[device["unique_id"]] = {"type": "pid",
+    #                                             "name": device["name"],
+    #                                             "channels": []}
 
-            pass
-        except Exception as e:
-            logger.error(f"Failed to get output devices. - {e}")
+    #         pass
+    #     except Exception as e:
+    #         logger.error(f"Failed to get output devices. - {e}")
 
+def get_measurements():
+    """ Fetch latest measurements from all devices channels """
+    for dev_uid, dev_item in devices.items():
+        if dev_item["type"] == "input":
+            # TODID: Inputs measurements here
+            for index, channel in enumerate(dev_item["channels"]):
+                measurement = mycodo.get_measurements(uid=dev_uid, channel=channel["channel"], unit=channel["unit"])
+                if "value" in measurement:
+                    if measurement["value"] != None:
+                        devices[dev_uid]["channels"][index]["value"] = float(measurement["value"])
+                    else:
+                        devices[dev_uid]["channels"][index]["value"] = None
+
+        elif dev_item["type"] == "output":
+            # TODO: Output measurements here
+            output_channels = mycodo.get_output_device(uid=dev_uid)
+            states = output_channels["output device channel states"]
+            for index, channel in enumerate(dev_item["channels"]):
+                if str(channel["channel"]) in states:
+                    state = states[str(channel["channel"])]
+                    if state == "on":
+                        state = float(1)
+                    elif state == "off":
+                        state = float(0)
+                    else:
+                        state = float(state)
+                        
+                    devices[dev_uid]["channels"][index]["value"] = state
+
+start_http_server(8000)
 main()
 
 if __file__ == "__main__":
+    # Start up the server to expose the metrics.
+    start_http_server(8000)
     main()
+        
     
 
     
