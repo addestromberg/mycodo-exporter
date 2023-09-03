@@ -10,6 +10,7 @@ FILE_LOG_LEVEL = logzero.WARNING
 EXPORT_MEASUREMENTS = ["INPUTS", "OUTPUTS"]     # This is due to the API model.
 PAST_SECONDS = 3600                                     # How old can the data be?
 
+GAUGE_PREFIX = "mycodo"
 INTERVAL_SECONDS = 60                                   # How often to update metrics
 
 SERVER_PORT = 8000

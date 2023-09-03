@@ -1,12 +1,19 @@
-from utility import get_logger
+from utility import get_logger, format_name
 from mycodo_api import MycodoApi
 import config
+import prometheus_client
 from prometheus_client import start_http_server, Gauge
+
 import time
 
 logger = get_logger()
 mycodo = MycodoApi()
 devices = {}
+
+prometheus_client.REGISTRY.unregister(prometheus_client.GC_COLLECTOR)
+prometheus_client.REGISTRY.unregister(prometheus_client.PLATFORM_COLLECTOR)
+prometheus_client.REGISTRY.unregister(prometheus_client.PROCESS_COLLECTOR)
+
 
 
 def main():
@@ -14,18 +21,38 @@ def main():
     get_devices()
     get_device_channels()
     logger.info(f"Found {len(devices)} device(s) on network.")
-    #get_measurements()
-    start_exporter()
-    pass
-
-def start_exporter():
-    logger.debug("Started the exporter...")
+    logger.info("Started the exporter...")
     while True:
         # TODO: Create the exports here... 
         logger.debug("Updating...")
         get_measurements()
-        
+        try:
+            update_gauges()
+        except Exception as e:
+            logger.warning("Had an error updating gauges. Trying to reload devices...")
+            devices = {}
+            get_devices()
+            get_device_channels()
         time.sleep(config.INTERVAL_SECONDS)
+
+
+def update_gauges():
+    for uid, device in devices.items():
+        for index, channel in enumerate(device["channels"]):
+            if "value" in channel:
+                if "gauge" not in channel:
+                    name = format_name(device["name"])
+                    channel_id = index
+                    type = device["type"]
+                    if type == "input":
+                        measurement = f"_{channel['measurement']}"
+                    else:
+                        measurement = ""
+                    devices[uid]["channels"][index]["gauge"] = Gauge(f"{config.GAUGE_PREFIX}_{name}_{type}{measurement}", f"{type} device channel")
+                
+                if channel["value"] != None:
+                    channel["gauge"].set(channel["value"])
+            
         
         
 
@@ -146,11 +173,6 @@ def get_measurements():
 
 start_http_server(8000)
 main()
-
-if __file__ == "__main__":
-    # Start up the server to expose the metrics.
-    start_http_server(8000)
-    main()
         
     
 
