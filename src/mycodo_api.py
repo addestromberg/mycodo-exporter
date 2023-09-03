@@ -16,12 +16,29 @@ class MycodoApi:
         self._headers = {"accept": "application/vnd.mycodo.v1+json",
                          "X-API-KEY": self._api_key}
         
-    def get_inputs(self):
+    def get_input_devices(self):
         url = self._build_url(endpoint="inputs")
         result = requests.get(url=url, headers=self._headers)
-        logger.debug(pprint(json.loads(result.text)))
-        return url
+        if result.status_code == 200:
+            return json.loads(result.text)
+        else:
+            return None
         
+    def get_output_devices(self):
+        url = self._build_url(endpoint="outputs")
+        result = requests.get(url=url, headers=self._headers)
+        if result.status_code == 200:
+            return json.loads(result.text)
+        else:
+            return None
+    
+    def get_pids(self):
+        url = self._build_url(endpoint="pids")
+        result = requests.get(url=url, headers=self._headers)
+        if result.status_code == 200:
+            return json.loads(result.text)
+        else:
+            return None
         
     def _build_url(self, endpoint: str) -> str:
         """
