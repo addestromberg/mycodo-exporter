@@ -1,0 +1,17 @@
+[Unit]
+Description=Mycodo Exporter
+After=multi-user.target
+Conflicts=getty@tty1.service
+
+[Service]
+Type=simple
+User=flummoxt
+WorkingDirectory=/home/flummoxt/mycodo-exporter/
+ExecStart=/home/flummoxt/mycodo-exporter/env/bin/python3 /home/flummoxt/mycodo-exporter/src/main.py
+TimeoutStopSec=10
+Restart=on-failure
+RestartSec=5
+StandardInput=tty-force
+
+[Install]
+WantedBy=multi-user.target
