@@ -2,6 +2,8 @@
 
 Searches for all input and output devices and publishes input measurements and output states to server.
 
+![Mycodo to Grafana Example](https://github.com/addestromberg/mycodo-exporter/blob/main/screenshot.png "Grafana Dashboard example")
+
 Metrics can be found at ```http://127.0.0.1:8000/metrics``` (Default)
 
 You can change the port from config file.
